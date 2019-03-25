@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<element>
+    <attribute name="Size" value="1600 900" />
+    <element>
+        <attribute name="Size" value="800 600" />
+        <attribute name="Layout Mode" value="Vertical" />
+        <attribute name="Layout Spacing" value="20" />
+        <attribute name="Horiz Alignment" value="Center" />
+        <attribute name="Vert Alignment" value="Center" />
+        <element type="Text">
+            <attribute name="Font" value="Font;Fonts/BlueHighway.ttf" />
+            <attribute name="Name" value="LoadingStateText" />
+            <attribute name="Font Size" value="15" />
+            <attribute name="Text Alignment" value="Center" />
+        </element>
+        <element type="ProgressBar">
+            <attribute name="Horiz Alignment" value="Center" />
+            <attribute name="Max Size" value="800 50" />
+            
+            <attribute name="Name" value="LoadingProgressBar" />
+        </element>
+    </element>
+</element>

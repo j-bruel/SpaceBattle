@@ -1,0 +1,41 @@
+@startuml
+
+class std::exception {
+}
+
+namespace spcbttl {
+
+    .std::exception <|.. IException
+
+    interface IException {
+        -mMsg : string
+        __
+        +IException(string)
+        ..
+        +char   *what()
+    }
+
+    IException <|.. HelpException
+    IException <|.. ConfException
+    IException <|.. CoreException
+    IException <|.. BufferDataManagerException
+
+    class   HelpException {
+        +HelpException(string)
+    }
+
+    class   ConfException {
+        +ConfException(string)
+    }
+
+    class   CoreException {
+        +CoreException(string)
+    }
+
+    class   BufferDataManagerException {
+        +BufferDataManagerException(string)
+    }
+
+}
+
+@enduml

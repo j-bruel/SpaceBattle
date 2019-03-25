@@ -1,0 +1,30 @@
+@startuml
+
+namespace spcbttl {
+
+    namespace server {
+
+        namespace core {
+
+            class SpaceBattle {
+                -mOptionsHandler : OptionsHandler
+                __
+                +SpaceBattle()
+                +SpaceBattle(SpaceBattle)
+                +SpaceBattle    operator=(SpaceBattle)
+                +~SpaceBattle()
+                ..
+                +void   init(int, char **)
+                +void   run()
+                ..
+                -void   initOptionsApp(int, char **)
+                -void   initLog()
+            }
+
+        }
+
+    }
+
+}
+
+@enduml

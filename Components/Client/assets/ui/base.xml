@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<element>
+    <attribute name="Size" value="1600 900" />
+    <element type="Cursor"></element>
+    <element>
+        <attribute name="Name" value="root" />
+        <attribute name="Horiz Alignment" value="Center" />
+    </element>
+</element>

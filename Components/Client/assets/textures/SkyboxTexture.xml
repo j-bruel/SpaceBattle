@@ -1,0 +1,9 @@
+<cubemap>
+    <face name="bkg1_right1.png" />
+    <face name="bkg1_left2.png" />
+    <face name="bkg1_top3.png" />
+    <face name="bkg1_bottom4.png" />
+    <face name="bkg1_front5.png" />
+    <face name="bkg1_back6.png" />
+    <quality low="0" />
+</cubemap>

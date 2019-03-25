@@ -1,0 +1,37 @@
+@startuml
+
+namespace spcbttl {
+
+namespace server {
+
+namespace conf {
+
+    class OptionsHandler {
+        -mLogFilePath : string
+        -mPort : size_t
+        -mAddress : string
+        -mVerbose : bool
+        ..
+        -mCmdlineOptions : program_options
+        __
+        +OptionsHandler()
+        +OptionsHandler(OptionsHandler)
+        +OptionsHandler operator=(OptionsHandler)
+        +~OptionsHandler()
+        ..
+        +void   loadBinaryArguments(int, char **)
+        +void   showHelp(char *)
+        ..
+        +string getLogFilePath()
+        +string getHostAddress()
+        +size_t getPort()
+        +bool   getVerboseMode()
+    }
+
+}
+
+}
+
+}
+
+@enduml

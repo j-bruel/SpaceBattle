@@ -1,0 +1,777 @@
+ 
+
+
+
+The Student Working Group                                 Jonathan Bruel
+Request for Comments: 0000                                 Arthur Grosso
+Category: Experimental                                     Pierre Jallut
+                                                                 Epitech
+                                                            October 2018
+
+
+               Fully Generic Multiplayer Gaming Protocol
+
+
+Abstract
+
+   This document describe how the gaming protocol works for the Epitech
+   project SpaceBattle
+
+Status of this Memo
+
+   This document specifies an Internet Best Current Practices for the
+   Internet Community, and requests discussion and suggestions for
+   improvements.  Distribution of this memo is unlimited.
+
+Copyright and License Notice
+
+   Copyright (C) The Student Working Group (2018). All Rights Reserved
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .  2
+     1.1.  Conventions Used in This Document . . . . . . . . . . . .  2
+   2.  Session Management  . . . . . . . . . . . . . . . . . . . . .  2
+   3.  Packet Description  . . . . . . . . . . . . . . . . . . . . .  2
+     3.1.  Defaults Game requests. . . . . . . . . . . . . . . . . .  3
+     3.2.  Package Lobby . . . . . . . . . . . . . . . . . . . . . .  3
+     3.2.  Package Game  . . . . . . . . . . . . . . . . . . . . . .  9
+   5.  Security Considerations . . . . . . . . . . . . . . . . . . . 12
+   6.  Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . 12
+
+
+
+
+
+
+ 
+
+
+                                                                        
+
+                                                                        
+
+
+Bruel                         Experimental                        Page 2
+RFC 0000               The Students Working Group           October 2018
+
+
+1.  Introduction
+
+   The provider will have to create new game based on standard naval
+battle across network. The Space Battle has same rules than the original
+game. This RFC is cut into REQ (request), RESP (response) and STATE
+(State). Request can be send by the client and the server, this is use to
+ask or give informations. RESP is use to give a response to a request.
+STATE is an indicator from a past request. All State are send by the
+response STATE_RESP.
+
+1.1.  Conventions Used in This Document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in RFC 2119 [RFC2119].
+
+
+2.  Session Management
+
+   A session requires creation of a TCP connection between two peers,
+   one that initiates the connection request and one that responds to
+   the connection request.  The initiating peer is called the "client",
+   and the responding peer is called the "server". A server MUST listen
+   for TCP connection requests on a standard TCP port.
+
+   The client MUST send a <Join Lobby Request> right after the TCP 
+   session has been initiated. The server then responds with a <FAIL> in
+   case of failure OR a <List of Rooms Request>.
+
+   The session is normally ended by the client closing the TCP 
+   connection.
+
+3.  Packet Header Description
+
+   EVERY packet MUST be structured the way it is described in this RFC.
+   If a mal-structured packet is received by either the client OR the
+   server, this last SHOULD be ignored.
+
+   This is the Packet anatomy :
+
+   <msgpackheader> [cmd_type][client_id] </msgpackheader><msgpackheader> [payload] </msgpackheader>
+   <msgpackheader> [  1byte ][  2bytes ] </msgpackheader><msgpackheader> [x bytes] </msgpackheader>
+
+
+ 
+
+
+                                                                        
+
+                                                                        
+
+
+Bruel                         Experimental                        Page 3
+RFC 0000               The Students Working Group           October 2018
+
+
+3.1.  Defaults Game requests values.
+
+
+   Game packets can have default state. This default state is 0. If a 
+packet state have the value 0, the state mean : Every thing is OK.
+   They exist few generic state how can be apply to multiple packet.
+
+
+3.2.  Lobby Requests
+
+   Lobby requests are used for user and game room management. They
+   represent all non game server interaction. A lobby request packet is
+   a packet with a command type (cmd_type) inferior to 10.
+
+   There are 14 type of Lobby requests:
+
+   	KEEP_ALIVE_REQ (client to server) :
+
+   	This command MUST be used to inform the server that the client 
+   	behind the specified ID is still alive and connected. 
+   	The server manage users by incrementing the number of missed 
+   	KEEP_ALIVE at a certain rate (LOBBY_REFRESH_RATE) for each user 
+   	and deleting it after a certain threshold (KEEP_ALIVE_THRESHOLD).
+   	In order to stay alive on the server, a user MUST send a KEEP_ALIVE 
+   	request at least every (KEEP_ALIVE_THRESHOLD * LOBBY_REFRESH_RATE) 
+   	milliseconds.
+
+
+   	cmd_type:         0
+   	client_id:        authentified client id
+   	payload:          ignored
+   	Server response:  none
+
+   	AUTHENTICATE_REQ (client to server) :
+
+   	This command authenticate a new client on the server giving him the
+   	ability to create, join, and launch games on the server.
+
+
+
+
+                                                                        
+
+                                                                        
+
+
+Bruel                         Experimental                        Page 4
+RFC 0000               The Students Working Group           October 2018
+
+
+   	cmd_type:         1
+   	client_id:        ignored
+   	payload:          player name (10 bytes)   
+   	Server response:  AUTHENTICATE_RESP
+
+
+	AUTHENTICATE_RESP (server to client) :
+
+	Give to the client the authorize acces right to communicate to the server.
+
+           cmd_type:         2
+           client_id:        authentified client id
+           payload:          player name (10 bytes max)
+                             Authenticate_state (1 byte)
+	   Authenticate State : 
+						    ERROR_MAX_CLIENT_NB_EXCEEDED_STATE (120) : If too much
+						    client are connected to the server.
+
+
+	GET_ROOM_LIST_REQ (client to server) :
+
+	Client ask to the server all room available.
+
+           cmd_type:         3
+           client_id:        authentified client id
+           payload:          ignored
+   	   Server response:  GET_ROOM_LIST_RESP : Room list.
+
+
+	GET_ROOM_LIST_RESP (server to client) :
+
+	Server give the client all room available into the server. The
+	response have a map information with room name and room state.
+	State available are : Wait for player or full.
+
+           cmd_type:         4
+           client_id:        authentified client id
+           payload:          an encoded map of <room_name, 
+   			     room_state> (x bytes), room_list_state (1 byte)
+
+
+
+ 
+
+
+                                                                        
+
+                                                                        
+
+
+Bruel                         Experimental                        Page 5
+RFC 0000               The Students Working Group           October 2018
+
+
+   	CREATE_ROOM_REQ (client to server) :
+
+   	Given a room name create the corresponding room on the server for
+   	players to join. A room name must not exceed 10 characters 
+   	otherwise the request will be ignored silently. A user creating a 
+   	room is automatically added to that room. The client must give
+	the game time limit (15, 30, 45 min or no limit) and tell if
+	viewers are allow to the game.
+
+           cmd_type:         5
+           client_id:        authentified client id
+           payload:          romm_name (10 bytes max), limit time (2 bytes)
+			     and is viewer allow (1 byte)
+   	   Server response:  CREATE_ROOM_RESP
+
+
+	CREATE_ROOM_RESP (server to client) :
+
+	Notify the client that the room was successfull created.
+
+           cmd_type:         6
+           client_id:        authentified client id
+           payload:          romm_name (10 bytes max), limit time (2 bytes)
+			     and is viewer allow (1 byte), room_state (1 byte)
+	   Room States:
+   		ERROR_MAX_ROOM_NB_EXCEEDED_STATE (102): Maximum number
+							  of room is 10.
+   		ERROR_PLAYER_ALREADY_IN_ROOM_STATE (103): Player is
+							already in a room.
+   		ERROR_ROOM_ALREADY_EXIST_STATE (104): If the room already
+						       exist on the server.
+   		ERROR_INVALID_ROOM_NAME_STATE (105): If the room name
+							 < 3 or > 10 char.
+
+
+ 
+
+
+
+
+
+                                                                        
+
+                                                                        
+
+
+Bruel                         Experimental                        Page 6
+RFC 0000               The Students Working Group           October 2018
+
+
+
+   	JOIN_ROOM_REQ (client to server) :
+
+   	Given a room name, attempt to join that room. If room name provided
+   	doesn't exist or if the room is already in game, the request SHALL
+   	be ignored silently.
+
+           cmd_type:         7
+           client_id:        authentified client id
+           payload:          room name
+   	   Server response:  JOIN_ROOM_RESP
+
+
+	JOIN_ROOM_RESP (server to client) :
+
+	Notify the client that he is joining a room.
+
+           cmd_type:         8
+           client_id:        authentified client id
+           payload:          romm_name (10 bytes max), limit time (2 bytes)
+			     and is viewer allow (1 byte), state (1 byte).
+           Join room state:  
+		ERROR_MAX_ROOM_PLAYER_EXCEEDED_STATE (107): Max number
+						   player in room reached.
+   		ERROR_PLAYER_ALREADY_IN_ROOM_STATE (103): player is already
+								in a room.
+   		ERROR_ROOM_DOES_NOT_EXIST_STATE (109): Room is not found
+						         on the server.
+   		ERROR_GAME_ALREADY_RUNNING_STATE (110): Game in room is
+							already running.
+
+
+   	VIEW_ROOM_REQ (client to server) :
+
+   	Given a room name, attempt to be a viewer into a existing room.
+
+           cmd_type:         9
+           client_id:        authentified client id
+           payload:          room name (10 bytes)
+   	   Server response:  VIEW_ROOM_REQ
+
+
+
+
+
+                                                                        
+
+                                                                        
+
+
+Bruel                         Experimental                        Page 7
+RFC 0000               The Students Working Group           October 2018
+
+
+   	VIEW_ROOM_RESP (server to client) :
+
+   	Give view room state.
+
+           cmd_type:         10
+           client_id:        authentified client id
+           payload:          room name (10 bytes), state (1 byte)
+           view room state:  
+   		ERROR_MAX_ROOM_VIEWER_EXCEEDED_STATE (112): Max number
+						   viewer in room reached.
+   		ERROR_ROOM_DOES_NOT_EXIST_STATE (109) : Room is not found
+							  on the server.
+		ERROR_VIEW_NOT_ALLOW (121) : Viewer are not allow in the room.
+
+
+   	EXIT_ROOM_REQ (client to server) :
+
+   	Given a room name, exit that room.
+
+           cmd_type:         11
+           client_id:        authentified client id
+           payload:          room name (10 bytes)
+           Server response:  none
+
+
+
+   	LAUNCH_GAME_REQ (client to server) :
+
+   	Attempt to launch the game session. When a game session is launch,
+	all players in this room will stop receiving LOBBY_STATE_UPDATE_RESP.
+
+           cmd_type:         12
+           client_id:        authentified client id
+           payload:          none
+   	Server response:  LAUNCH_GAME_RESP
+
+
+
+
+
+
+                                                                        
+
+
+Bruel                         Experimental                        Page 8
+RFC 0000               The Students Working Group           October 2018
+
+
+
+   	LAUNCH_GAME_RESP (server to client) :
+
+   	Game launching state.
+
+           cmd_type:         13
+           client_id:        authentified client id
+           payload:          state (1 byte)
+   	   launching state:  
+   		ERROR_PLAYER_NOT_IN_ROOM_STATE (115): If the player is
+							not in a room.
+   		ERROR_GAME_ALREADY_RUNNING_STATE (110): Game in room is
+							already running.
+   		ERROR_NOT_AUTH_STATE (101): If the player is not
+						authenticated on the server.
+
+
+   	LOBBY_STATE_UPDATE_RESP  (server to client) :
+
+   	A LOBBY_STATE_UPDATE SHOULD be sent by the server to all connected
+   	client that are in the waiting room. It contain a representation of the 
+   	player name and his state. The player state can be PLAYER or VIEWER.
+
+           cmd_type:         14
+           client_id:        authentified client id
+           payload:          an encoded map of <player name,
+			     player state>
+           Server response:  none
+
+
+
+
+
+
+
+
+                                                                        
+
+                                                                        
+
+
+Bruel                         Experimental                        Page 9
+RFC 0000               The Students Working Group           October 2018
+
+
+Lobby request use case :
+
+     Client                                          Server
+	|                                                    |
+	|                (AUTHENTIFICATE_REQ)		         |
+	|--------------------------------------------------->|
+	|                  (player name)		             |
+	|                                                    |
+	|               (AUTHENTIFICATE_RESP)		         |
+	|<---------------------------------------------------|
+	|          (client id, player_name, state)	         |
+	|                                                    |
+	|                 (GET_ROOM_LIST_REQ)     	         |
+	|--------------------------------------------------->|
+	|                                                    |
+	|                (GET_ROOM_LIST_RESP)		         |
+	|<---------------------------------------------------|
+	|            (list of room name and state)	         |
+	|                                                    |
+	|              (CREATE_ROOM_REQ)                |    |
+	|---------------------------------------------->|    |
+	| (room name, limit time and is viewer allow)   |    |
+	|              (JOIN_ROOM_REQ)                  |--->|
+	|---------------------------------------------->|    |
+	|                   (room name)                 |    |
+	|                (VIEW_ROOM_REQ)                |    |
+	|---------------------------------------------->|    |
+	|                (room name)                    |    |
+	|    |             (CREATE_ROOM_RESP)                |
+	|    |<----------------------------------------------|
+	|    |(room name, limit time, is viewer allow, state)|
+	|<---|             (JOIN_ROOM_RESP)                  |
+	|    |<----------------------------------------------|
+	|    |             (room name, state)                |
+	|    |               (VIEW_ROOM_RESP)                |
+	|    |<----------------------------------------------|
+	|    |             (room name, state)                |
+	|                                                    |
+	|	     (LOBBY_STATE_UPDATE_RESP)                   |
+	|<---------------------------------------------------|
+	|	     (LOBBY_STATE_UPDATE_RESP)                   |
+	|<---------------------------------------------------|
+	|            (LOBBY_STATE_UPDATE_RESP)               |
+	|<---------------------------------------------------|
+	|                                                    |
+	|                 (LAUNCH_GAME_REQ)                  |
+	|--------------------------------------------------->|
+	|                                                    |
+	|                (LAUNCH_GAME_RESP)                  |
+	|<---------------------------------------------------|
+	|                                                    |
+
+                                                                  
+
+
+      
+
+                                                                        
+
+
+Bruel                         Experimental                        Page 10
+RFC 0000               The Students Working Group           October 2018
+
+
+
+3.3. Game Requests
+
+   Game request represent all in-game client server interaction. A game
+   request packet is identified with a cmd_type superior or equal to 10.
+
+   	SET_USER_BATTLESHIP_REQ (client to server) :
+
+   	Initialize battleship informations.
+
+           cmd_type:         20
+           client_id:        authentified client_id
+           payload:          [SHIP_1_1][POS]
+			     [SHIP_1_2][POS][POS]
+			     [SHIP_1_3][POS][POS][POS]
+			     [SHIP_2_3][POS][POS][POS]
+			     [SHIP_1_4][POS][POS][POS][POS]
+			     [SHIP_1_5][POS][POS][POS][POS][POS]
+			     with pos 1 byte, ship 1 byte.
+		   server response: SET_USER_BATTLESHIP_RESP
+
+   	SET_USER_BATTLESHIP_RESP (server to clients) :
+
+   	Ship initialize state, the ship displayed in the payload are
+        all invalid ship.
+
+           cmd_type:         21
+           client_id:        authentified client_id
+           payload:          [SHIP_1_1][POS]
+			     [SHIP_1_2][POS][POS]
+			     [SHIP_1_3][POS][POS][POS]
+			     [SHIP_2_3][POS][POS][POS]
+			     [SHIP_1_4][POS][POS][POS][POS]
+			     [SHIP_1_5][POS][POS][POS][POS][POS],
+			     clientId,
+			     state
+			     with pos 1 byte, ship 1 byte and state 1 byte.
+           State:  
+   		ERROR_INVALID_SHIP_STATE (119):If ship position is invalid.
+
+
+  	GAME_READY_TO_LAUNCH_REQ (server to client) :
+
+   	Tell's client that the game is ready to launch.
+
+           cmd_type:         28
+           client_id:        authentified client_id
+           payload:          none
+
+  	YOUR_TURN_TO_PLAY_REQ (server to client) :
+
+   	Give the information that this is the client turn to play.
+
+           cmd_type:         29
+           client_id:        authentified client_id
+           payload:          none
+
+
+
+                                                                        
+
+
+Bruel                         Experimental                        Page 11
+RFC 0000               The Students Working Group           October 2018
+
+
+   	SEND_CHAT_MSG_REQ (client to server) :
+
+   	Update chat messages with a chanel type (In game or General).
+
+           cmd_type:         22
+           client_id:        authentified client_id
+           payload:          [CHANEL_TYPE][MSG]
+           Server response:  none
+
+   	BROADCAST_CHAT_MSG_RESP (server to client) :
+
+   	Update chat messages with a chanel type (In Game or General).
+
+           cmd_type:         23
+           client_id:        authentified client_id
+           payload:          [CHANEL_TYPE][MSG]
+           Server response:  none
+ 
+
+   	SHOOT_SHIP_REQ (client to server) :
+
+   	Client shoot another ship client.
+
+           cmd_type:         24
+           client_id:        authentified client_id
+           payload:          [ID_POSITION] (1 byte)
+           Server response:  SHOOT_SHIP_RESP
+
+
+   	SHOOT_SHIP_RESP (server to client) :
+
+   	Give client shoot state. Shoot state can be : IMPACTED,
+                                                  SUNK_TOUCHDOWN or
+                                                  FAILED.
+	Player ID allow the client to know to witch screen the shoot
+	will be displayed.
+
+           cmd_type:         26
+           client_id:        ignored
+           payload:          [STATE][ID_POS][CLIENT_ID] (1, 1 and 2 bytes)
+           Server response:  State (1 byte) :
+           State:  
+           		ERROR_NOT_PLAYER_TURN (122): If a player play when it's not
+           		his turn.
+                
+
+
+
+
+                                                                        
+
+
+Bruel                         Experimental                       Page 12
+RFC 0000               The Students Working Group           October 2018
+
+
+
+   	END_GAME_STATUS_REQ (server to clients) :
+
+   	Give client final game status (WIN, LOOSE or ERROR). Server close
+        game just after.
+
+           cmd_type:         27
+           client_id:        ignored
+           payload:          [CLIENT_FINAL_GAME_STATUS] (1 byte)
+           Server response:  none
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                                        
+
+
+Bruel                         Experimental                       Page 13
+RFC 0000               The Students Working Group           October 2018
+
+
+Game request use case, just after lobby use case :
+
+     Client                                                Server
+	|                                                    |
+	|             (SET_USER_BATTLESHIP_REQ)		         |
+	|--------------------------------------------------->|
+	|               (ships informations)		         |
+	|                                                    |	
+	|             (SET_USER_BATTLESHIP_RESP)	         |
+	|<---------------------------------------------------|
+	|            (ships informations, state)	         |
+	|                                                    |
+	|             (GAME_READY_TO_LAUNCH_REQ)	         |
+	|<---------------------------------------------------|
+	|                                       	         |
+	|                                       	         |
+	|             (YOUR_TURN_TO_PLAY_REQ)	             |
+	|<---------------------------------------------------|
+	|                                       	         |
+	|                                                    |
+	|                  (SHOOT_SHIP_REQ) 	             |
+	|--------------------------------------------------->|
+	|                  (ship position)                   |
+	|                 (SHOOT_SHIP_RESP)                  |
+	|<---------------------------------------------------|
+	|               (state, pos, client id)	             |
+	|                                                    |
+	|             (YOUR_TURN_TO_PLAY_REQ)	             |
+	|<---------------------------------------------------|
+	|                                       	         |
+	|                                                    |
+	|                  (SHOOT_SHIP_REQ) 	             |
+	|--------------------------------------------------->|
+	|                  (ship position)                   |
+	|                 (SHOOT_SHIP_RESP)                  |
+	|<---------------------------------------------------|
+	|               (state, pos, client id)	             |
+	|                                                    |
+	|             (YOUR_TURN_TO_PLAY_REQ)	             |
+	|<---------------------------------------------------|
+	|                                       	         |
+	|                                       	         |
+	|                 (SEND_CHAT_MSG_REQ) 	             |
+	|--------------------------------------------------->|
+	|                  (msg, chanel type)                |
+	|              (BROADCAST_CHAT_MSG_REQ)              |
+	|<---------------------------------------------------|
+	|                  (msg, chanel type)                |
+	|                                                    |
+	|             (YOUR_TURN_TO_PLAY_REQ)	             |
+	|<---------------------------------------------------|
+	|                                       	         |
+	|                                                    |
+	|                  (SHOOT_SHIP_REQ) 	             |
+	|--------------------------------------------------->|
+	|                  (ship position)                   |
+	|                 (SHOOT_SHIP_RESP)                 |
+	|<---------------------------------------------------|
+	|               (state, pos, client id)	             |
+	|                                                    |
+	|                                                    |
+	|             (YOUR_TURN_TO_PLAY_REQ)	             |
+	|<---------------------------------------------------|
+	|                                       	         |
+	|                  (SHOOT_SHIP_REQ) 	             |
+	|--------------------------------------------------->|
+	|                  (ship position)                   |
+	|                 (SHOOT_SHIP_RESP)                 |
+	|<---------------------------------------------------|
+	|               (state, pos, client id)	             |
+	|                                                    |
+	|                 (END_GAME_STATUS_REQ)              |
+	|<---------------------------------------------------|
+	|                    (final state)                   |
+
+
+
+                                                                        
+
+                                                                        
+
+
+Bruel                         Experimental                       Page 14
+RFC 0000               The Students Working Group           October 2018
+
+4.  Security Considerations
+
+   There is no account management in GMGP, so no need to hide passwords
+   or whatever.
+
+5.  Author's Addresses
+
+   Jonathan Bruel
+   Epitech Paris
+   24 rue Pasteur
+   Le Kremlin-Bicetre, 94260
+
+   Phone: +1 310-822-1511
+   Fax:   +1 310-823-6714
+   EMail: jonathan.bruel@epitech.eu
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                                        

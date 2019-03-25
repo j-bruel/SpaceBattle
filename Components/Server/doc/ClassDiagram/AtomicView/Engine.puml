@@ -1,0 +1,211 @@
+@startuml
+
+namespace spcbttl {
+
+namespace server {
+
+namespace engine {
+
+    class PacketDispatcher {
+        -_queue : PacketQueue
+        -_workers : list<thread>
+        -_run : bool
+        -_size : unsigned int
+        -_rooms : RoomManager
+        __
+        -void stalker(unsigned int)
+        ..
+        +PacketDispatcher(PacketQueue, RoomManager, unsigned int)
+        +bool is_running()
+        +void start()
+        +void stop()
+    }
+
+    abstract class ACommander <unsigned int NB_COMMANDS, typename CLASS, typename PARAM> {
+        -_commands : array<function<void (CLASS &, Commander &, PARAM)>, NB_COMMANDS>
+        __
+        {abstract}#void notExist(unsigned int, PARAM)
+        __
+        +ACommander(CLASS &)
+        +~ACommander()
+        +void set_command(unsigned int, function<void (CLASS &, Commander &, PARAM))
+        +void exec_command(unsigned int, PARAM)
+    }
+
+    enum Player::Status {
+        UNREGISTRED
+        REGISTRED
+        VIEWER
+        PLAYER
+    }
+
+    class Player {
+        -_id : unsigned int
+        -_name : string
+        -_socket : sckcpp::tcp::ClientSocket
+        -_alive_count : unsigned int
+        -_ready : bool
+        __
+        +Player(unsigned int, string, sckcpp::tcp::ClientSocket)
+        +bool in_room()
+        +unsigned short id()
+        +sckcpp::tcp::ClientSocket socket()
+        +void set_status(Player::Status)
+        +Player::Status get_status()
+        +void alive()
+        +void ready()
+        +bool is_ready()
+        +bool is_alive()
+        +string get_name()
+    }
+
+    enum ShipPartStatus {
+        GOOD
+        DESTROYED
+    }
+
+    class ShipPart {
+        -_coordinate : uint8_t
+        -_status : ShipPartStatus
+        __
+        +ShipPart(uint8_t)
+        +void shoot()
+        +uint8_t coordinate()
+        +ShipPartStatus status()
+    }
+
+    class Ship {
+        -_parts : list<ShipPart>
+        __
+        -bool is_horizontal()
+        -bool is_vertical()
+        -bool has_duplicate()
+        -bool valid_coord()
+        ..
+        +unsigned long size()
+        +list<ShipPart> parts()
+        +bool validate()
+        +bool destroyed()
+        +string print()
+    }
+
+    class Case {
+        +shippart[2] : Ship::Part
+        +ship[2] : Ship
+    }
+
+    class Battlefield {
+        -_board : array<Case>
+        -_ships : list<pair<Ship, Player>>
+        -_players[2] : Player
+        -_game_started : bool
+        __
+        -unsigned short player_allowed(Player)
+        ..
+        +Battlefild()
+        +void game_start()
+        +bool is_started()
+        +bool has_ship()
+        +bool set_players(Player, Player)
+        +bool set_ship(Player, Ship)
+        +void clear_ship(Player)
+        +commun::engine::ShootState shoot(Player, uint8_t)
+        +unsigned short ship_not_destroyed(Player)
+    }
+
+    ACommander <|.. Room
+    class Room <unsigned int MAX_ROOMS, unsigned int MAX_PLAYERS> {
+        -_manager : TRoomManager
+        -_battlefield : Battlefield
+        -_players : array<Player>
+        -_viewers : list<Player>
+        -_current_player : unsigned int
+        -_state : commun::room::State
+        -_allow_viewers : bool
+        -_name : string
+        -_time_limit : commun::engine::TimeLimit
+        -_api : net::BattleAPI
+        -_start_time : crono::time_point
+        __
+        -Ship load_Destroyer(commun::engine::Destroyer)
+        -Ship load_Dubmarine(commun::engine::Submarine)
+        -Ship load_Cruiser(commun::engine::Cruiser)
+        -Ship load_Battleship(commun::engine::BattleShip)
+        -Ship load_Carrier(commun::engine::Carrier)
+        -void next_player()
+        -void start_game()
+        -unsigned short which_player(unsigned short)
+        ..
+        -void set_user_battleship(ACommander, Packet)
+        -void send_chat_msg(ACommander, Packet)
+        -void shoot_ship(ACommander, Packet)
+        -void launch_game(ACommander, Packet)
+        __
+        +void execute(SPacket)
+        +void add_player(Player)
+        +void add_viewer(Player)
+        +void del_player(Player)
+        +bool full_player()
+        +bool full_viewer()
+        +commun::room:State status()
+        +const string name()
+        +bool allow_viewers()
+        +commun::engine::TimeLimit time_limit()
+        +chrono::time_point start_time()
+        +list<Player> players()
+        +list<Player> viewers()
+        Player getLooser()
+    }
+
+    ACommander <|.. TRoomManager
+    class TRoomManager <unsigned int MAX_ROOMS, unsigned int MAX_PLAYERS> {
+        -_rooms : commun::net::Packet
+        -_players : array<tuple<Player, Player::Status, Room>>
+        -_api : net::BattleAPI
+        __
+        -bool time_to_check()
+        -void check_rooms()
+        -void build_room(Room)
+        -void destroy_room(Room, Player)
+        -void destroy_room_error(Room)
+        -void notify_room_players(Room)
+        -void attach_player_room(Room, Player)
+        -void attach_viewer_room(Room, Player)
+        -void detach_viewer_room(Room, Player)
+        -void add_player(unsigned int, const string &, sckcpp::tcp::ClientSocket &)
+        -void reset_player(tuple<Player, Player::Status, Room> &)
+        -void del_player(tuple<Player, Player::Status, Room> &)
+        -bool is_authenticated(unsigned int, const string &) &
+        -void players_alive()
+        -array<tuple<Player, Player::Status, Room>>::iterator fin_player(const string)
+        -list<Room>::iterator fin_room(const string)
+        ..
+        -void room_commands(ACommander, Packet)
+        -void keep_alive(ACommander, Packet)
+        -void authenticate(ACommander, Packet)
+        -void get_room_list(ACommander, Packet)
+        -void create_room(ACommander, Packet)
+        -void join_room(ACommander, Packet)
+        -void view_room(ACommander, Packet)
+        -void exit_room(ACommander, Packet)
+        -void send_chat_msg(ACommander, Packet)
+        __
+        +void execute(SPacket)
+        +void check()
+    }
+
+    TRoomManager o- PacketDispatcher
+    Room *- TRoomManager
+    Player *- TRoomManager
+    Player *- Room
+    Player::Status *- Player
+    Battlefield o- Room
+    Ship *- Battlefield
+    Case *- Battlefield
+    ShipPart o- Case
+    ShipPart *- Ship
+    ShipPartStatus o- ShipPart
+    }
+}
+}
+@enduml

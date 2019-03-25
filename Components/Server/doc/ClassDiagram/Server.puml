@@ -1,0 +1,148 @@
+@startuml
+
+class exception {
+}
+
+namespace spcbttl {
+
+    namespace server {
+
+        namespace engine {
+            class PacketDispatcher {
+                +PacketDispatcher(PacketQueue, RoomManager, unsigned int)
+                +bool is_running()
+                +void start()
+                +void stop()
+            }
+
+            ACommander <|.. TRoomManager
+            class TRoomManager <unsigned int MAX_ROOMS, unsigned int MAX_PLAYERS> {
+                +void execute(SPacket)
+                +void check()
+            }
+
+            TRoomManager o- PacketDispatcher
+        }
+
+        namespace conf {
+
+            class OptionsHandler {
+                -mLogFilePath : string
+                -mPort : size_t
+                -mAddress : string
+                -mVerbose : bool
+                ..
+                -mCmdlineOptions : program_options
+                __
+                +OptionsHandler()
+                +OptionsHandler(OptionsHandler)
+                +OptionsHandler operator=(OptionsHandler)
+                +~OptionsHandler()
+                ..
+                +void   loadBinaryArguments(int, char **)
+                +void   showHelp(char *)
+                ..
+                +string getLogFilePath()
+                +string getHostAddress()
+                +size_t getPort()
+                +bool   getVerboseMode()
+            }
+
+        }
+
+        namespace core {
+
+            class SpaceBattle {
+                -mOptionsHandler : OptionsHandler
+                -mRoomManager : TRoomManager
+                -mPacketDispatcher : PacketDispatcher
+                __
+                +SpaceBattle()
+                +SpaceBattle(SpaceBattle)
+                +SpaceBattle    operator=(SpaceBattle)
+                +~SpaceBattle()
+                ..
+                +void   init(int, char **)
+                +void   run()
+                ..
+                -void   initOptionsApp(int, char **)
+                -void   initLog()
+            }
+
+        }
+
+        namespace net {
+
+            class   Server {
+                -mIos : boost::asio::io_service
+                -mServerSocket : ServerSocke
+                -mClientManager : ClientManager
+                __
+                +Server()
+                +Server(string, size_t)
+                +Server(Server)
+                +Server  operator=(Server)
+                +~Server()
+                ..
+                +void    run()
+                +void    stop()
+                ..
+                -void    setupAcceptor(string, size_t)
+                -void    setupCallbacks()
+                -void    notifyClientsServerDisconnect()
+            }
+
+            class   ClientManager {
+                -mClients : set<ClientPtr>
+                __
+                +ClientManager()
+                +~ClientManager()
+                ..
+                +void           add(ClientPtr client)
+                +void           remove(ClientPtr client)
+                +void           stop(ClientPtr client)
+                +void           stopAll()
+                +void           foreach(OnForeachClientFunc onForeach)
+                +set<ClientPtr> getClients()
+                +size_t         count()
+            }
+
+            class BattleAPI {
+                +BattleAPI()
+                +BattleAPI(BattleAPI &)
+                +BattleAPI   &operator=(BattleAPI &)
+                +~BattleAPI()
+                ..
+                void    keepAliveReq(ClientSocket, unsigned short)
+                void    authReq(ClientSocket, unsigned short, string)
+                void    authResp(ClientSocket, unsigned short, string, State)
+                void    getRoomListReq(ClientSocket, unsigned short)
+                void    getRoomListResp(ClientSocket, unsigned short, map<string, State>)
+                void    createRoomReq(ClientSocket, unsigned short, string, TimeLimit, bool)
+                void    createRoomResp(ClientSocket, unsigned short, string, TimeLimit, bool, State)
+                void    joinRoomReq(ClientSocket, unsigned short, string)
+                void    joinRoomResp(ClientSocket, unsigned short, string, TimeLimit, bool, State)
+                void    viewRoomReq(ClientSocket, unsigned short, string)
+                void    viewRoomResp(ClientSocket, unsigned short, string, State)
+                void    exitRoomReq(ClientSocket, unsigned short, string)
+                void    launchGameReq(ClientSocket, unsigned short)
+                void    launchGameResp(ClientSocket, unsigned short, State)
+                void    lobbyStateUpdateResp(ClientSocket, unsigned short, map<string, State>)
+                void    setUserBattleshipReq(ClientSocket, unsigned short, Ships)
+                void    setUserBattleshipResp(ClientSocket, unsigned short, Ships, State)
+                void    sendChatMsgReq(ClientSocket, unsigned short, ChanelType, string)
+                void    broadcastChatMsgResp(vector<pair<reference_wrapper<ClientSocket>, unsigned short>>, ChanelType, string )
+                void    shootShipReq(ClientSocket, unsigned short, size_t pos)
+                void    shootShipResp(ClientSocket, unsigned short, ShootState, size_t, unsigned short)
+                void    endGameStatusReq(ClientSocket, unsigned short, FinalGameStatus)
+                ..
+                -void    sendHeaderPacket(ClientSocket, Type, unsigned short)
+            }
+
+        }
+
+    }
+
+}
+
+@enduml

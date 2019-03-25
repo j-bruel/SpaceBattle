@@ -1,0 +1,14 @@
+//
+// Created by grosso_a on 27/11/18.
+//
+
+#ifndef T_CPP_SPACEBATTLE_2018_ENGINE_HPP
+#define T_CPP_SPACEBATTLE_2018_ENGINE_HPP
+
+#define GAME_BOARD_SIZE 10
+#define ALIVE_COUNT 10
+#define MAX_VIEWER 10
+#define MAX_ROOM 30
+#define MAX_PLAYER 100
+
+#endif //T_CPP_SPACEBATTLE_2018_ENGINE_HPP

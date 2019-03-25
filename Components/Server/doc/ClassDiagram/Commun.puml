@@ -1,0 +1,361 @@
+@startuml
+
+class std::exception {
+}
+
+namespace spcbttl {
+
+    .std::exception <|.. IException
+
+    interface IException {
+        -mMsg : string
+        __
+        +IException(string)
+        ..
+        +char   *what()
+    }
+
+    IException <|.. HelpException
+    IException <|.. ConfException
+    IException <|.. CoreException
+    IException <|.. BufferDataManagerException
+
+    class   HelpException {
+        +HelpException(string)
+    }
+
+    class   ConfException {
+        +ConfException(string)
+    }
+
+    class   CoreException {
+        +CoreException(string)
+    }
+
+    class   BufferDataManagerException {
+        +BufferDataManagerException(string)
+    }
+
+    namespace commun {
+
+        namespace room {
+
+            enum    State   {
+                NEW
+                WAITING_FOR_PLAYER
+                WAITING_FOR_LAUNCH
+                IN_PROFRESS
+                FINISH
+                NONE
+            }
+
+        }
+
+        namespace engine {
+
+            enum    ChanelType {
+                GAME
+                GENERAL
+                NONE
+            }
+
+            enum    FinalGameStatus {
+                WIN,
+                LOOSE,
+                ERROR
+            }
+
+            class  Ships {
+                +Ship::Destroyer   mDestroyer
+                +Ship::Submarine   mSubmarine
+                +Ship::Cruiser     mCruiser1
+                +Ship::Cruiser     mCruiser2
+                +Ship::Battleship  mBattleship
+                +Ship::Carrier     mCarrier
+            }
+
+            enum    ShootState {
+                IMPACTED
+                SUNK_TOUCHDOWN
+                FAILED
+            }
+
+            enum    TimeLimit {
+                FOURTEEN_MIN
+                THIRTY_MIN
+                FORTY_FILE_MIN
+                NO_LIMIT
+            }
+
+        }
+
+        namespace net {
+
+            class Packet {
+                +mPacketHeader : PacketHeader
+                +mPacketBody : shared_ptr<IRequest>
+                __
+                Packet()
+                ..
+                void    setHeader(req::Type, unsigned short)
+                void    reset()
+            }
+
+            class  PacketHeader {
+                +mCmdType : Type
+                +mClientId : unsigned short
+                __
+                +PacketHeader()
+                ..
+                +void    set(Type, unsigned short)
+                +void    reset()
+            }
+
+            class   PacketManager {
+                -mHeaderReceived : bool
+                -mPacket : Packet
+                -mReqLoader : RequestLoader
+                -mBuffer : BufferDataManager<Packet>
+                __
+                +PacketManager()
+                +PacketManager(PacketManager)
+                +PacketManager   operator=(PacketManager)
+                +~PacketManager()
+                ..
+                +void   packetReceived(msgpack::object, ClientSocket)
+                ..
+                -bool   isHeader()
+                -void   loadPacketHeader(msgpack::object, ClientSocket)
+                -void   loadPacketBody(msgpack::object, ClientSocket)
+                ..
+                -void   invalidPacketReceived(ClientSocket, string)
+            }
+
+            namespace req {
+
+                enum    Type {
+                    KEEP_ALIVE_REQ = 0
+                    AUTHENTICATE_REQ = 1
+                    AUTHENTICATE_RESP = 2
+                    GET_ROOM_LIST_REQ = 3,
+                    GET_ROOM_LIST_RESP = 4
+                    CREATE_ROOM_REQ = 5
+                    CREATE_ROOM_RESP = 6
+                    JOIN_ROOM_REQ = 7
+                    JOIN_ROOM_RESP = 8
+                    VIEW_ROOM_REQ = 9
+                    VIEW_ROOM_RESP = 10
+                    EXIT_ROOM_REQ = 11
+                    LAUNCH_GAME_REQ = 12
+                    LAUNCH_GAME_RESP = 13
+                    LOBBY_STATE_UPDATE_RESP = 14
+                    SET_USER_BATTLESHIP_REQ = 20
+                    SET_USER_BATTLESHIP_RESP = 21
+                    SEND_CHAT_MSG_REQ = 22
+                    BROADCAST_CHAT_MSG_REQ = 23
+                    SHOOT_SHIP_REQ = 24
+                    SHOOT_SHIP_RESP = 25
+                    SHOOT_STATE_RESP = 26
+                    END_GAME_STATUS_REQ = 27
+                    NONE = 99
+                }
+
+                enum    State {
+                    ERROR_ALREADY_AUTH_STATE = 100
+                    ERROR_NOT_AUTH_STATE = 101
+                    ERROR_MAX_ROOM_NB_EXCEEDED_STATE = 102
+                    ERROR_PLAYER_ALREADY_IN_ROOM_STATE = 103
+                    ERROR_ROOM_ALREADY_EXIST_STATE = 104
+                    ERROR_INVALID_ROOM_NAME_STATE = 105
+                    ERROR_MAX_ROOM_PLAYER_EXCEEDED_STATE = 107
+                    ERROR_ROOM_DOES_NOT_EXIST_STATE = 109
+                    ERROR_GAME_ALREADY_RUNNING_STATE = 110
+                    ERROR_MAX_ROOM_VIEWER_EXCEEDED_STATE = 112
+                    ERROR_PLAYER_NOT_IN_ROOM_STATE = 115
+                    ERROR_INVALID_POSITION_STATE = 118
+                    ERROR_INVALID_SHIP_STATE = 119
+                    NO_STATE = 999
+                }
+
+                class   RequestLoader {
+                    -mRequestsFunctionsLoader : unordered_map<Type, function<shared_ptr<IRequest> (msgpack::object )>>
+                    __
+                    +RequestLoader()
+                    +RequestLoader(RequestLoade)
+                    +RequestLoader   operator=(RequestLoader)
+                    +~RequestLoader()
+                    ..
+                    +shared_ptr<IRequest>   load(Type, msgpack::object)
+                    ..
+                    -shared_ptr<IRequest>   makeKeepAliveReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeAuthenticateReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeAuthenticateResp(msgpack::object)
+                    -shared_ptr<IRequest>   makeGetRoomListReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeGetRoomListResp(msgpack::object)
+                    -shared_ptr<IRequest>   makeCreateRoomReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeCreateRoomResp(msgpack::object)
+                    -shared_ptr<IRequest>   makeJoinRoomReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeJoinRoomResp(msgpack::object)
+                    -shared_ptr<IRequest>   makeViewRoomReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeViewRoomResp(msgpack::object)
+                    -shared_ptr<IRequest>   makeExitRoomReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeLaunchGameReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeLaunchGameResp(msgpack::object)
+                    -shared_ptr<IRequest>   makeLobbyStateUpdateResp(msgpack::object)
+                    -shared_ptr<IRequest>   makeSetUserBattleshipReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeSetUserBattleshipResp(msgpack::object)
+                    -shared_ptr<IRequest>   makeSendChatMsgReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeBroadcastChatMsgReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeShootShipReq(msgpack::object)
+                    -shared_ptr<IRequest>   makeShootShipResp(msgpack::object)
+                    -shared_ptr<IRequest>   makeShootStateResp(msgpack::object)
+                    -shared_ptr<IRequest>   makeEndGameStatusReq(msgpack::object)
+                }
+
+                interface   IRequest {
+                    IRequest()
+                    IRequest(IRequest)
+                    IRequest    operator=(IRequest)
+                    ~IRequest()
+                    __
+                    Type    getType()
+                }
+
+                IRequest <|.. KeepAliveReq
+                IRequest <|.. GetRoomListResp
+                IRequest <|.. GetRoomListReq
+                IRequest <|.. CreateRoomResp
+                IRequest <|.. CreateRoomReq
+                IRequest <|.. AuthenticateResp
+                IRequest <|.. AuthenticateReq
+
+                class   KeepAliveReq {
+                    +KeepAliveReq()
+                    +KeepAliveReq(KeepAliveReq)
+                    +KeepAliveReq    operator=(KeepAliveReq)
+                    +~KeepAliveReq()
+                    ..
+                    +Type getType()
+                }
+
+                class   GetRoomListResp {
+                    -mRoomsState : map<string, room::State>
+                    __
+                    +GetRoomListResp()
+                    +GetRoomListResp(GetRoomListResp)
+                    +GetRoomListResp    operator=(GetRoomListResp)
+                    +~GetRoomListResp()
+                    ..
+                    +Type   getType()
+                    ..
+                    +void                       addRoomState(string, room::State)
+                    +room::State                getRoomState(string)
+                    +map<string, room::State>   getRooms()
+                }
+
+                class   GetRoomListReq {
+                    +GetRoomListReq()
+                    +GetRoomListReq(GetRoomListReq)
+                    +GetRoomListReq    operator=(GetRoomListReq)
+                    +~GetRoomListReq()
+                    ..
+                    +Type getType()
+                }
+
+                class   CreateRoomResp {
+                    -mRoomName : string
+                    -mLimitTime : engine::TimeLimit
+                    -mIsViewerAllow : bool
+                    -mRoomState : State
+                    __
+                    +CreateRoomResp()
+                    +CreateRoomResp(CreateRoomResp)
+                    +CreateRoomResp    operator=(CreateRoomResp)
+                    +~CreateRoomResp()
+                    ..
+                    +Type   getType()
+                    ..
+                    +void               setRoomName(string)
+                    +string             getRoomName()
+                    +void               setLimitType(engine::TimeLimit)
+                    +engine::TimeLimit  getLimitType()
+                    +void               setIsViewerAllow(bool)
+                    +bool               isViewerAllow()
+                    +void               setRoomState(State)
+                    +State              getRoomState()
+                }
+
+                class   CreateRoomReq {
+                    -mRoomName : string
+                    -mLimitTime : engine::TimeLimit
+                    -mIsViewerAllow : bool
+                    ..
+                    +CreateRoomReq()
+                    +CreateRoomReq(CreateRoomReq)
+                    +CreateRoomReq    operator=(CreateRoomReq)
+                    +~CreateRoomReq()
+                    ..
+                    +Type getType()
+                    ..
+                    +void               setRoomName(string)
+                    +string             getRoomName()
+                    +void               setLimitType(engine::TimeLimit timeLimit)
+                    +engine::TimeLimit  getLimitType()
+                    +void               setIsViewerAllow(bool)
+                    +bool               isViewerAllow()
+                }
+
+                class   AuthenticateResp {
+                    -mPlayerName : string
+                    -mState : State
+                    __
+                    +AuthenticateResp()
+                    +AuthenticateResp(AuthenticateResp)
+                    +AuthenticateResp    operator=(AuthenticateResp)
+                    +~AuthenticateResp()
+                    ..
+                    +Type   getType()
+                    ..
+                    +void   setPlayerName(string)
+                    +string getPlayerName()
+                    +void   setState(State)
+                    +State  getRoomState()
+                }
+
+                class   AuthenticateReq {
+                    -mPlayerName : string
+                    ..
+                    +AuthenticateReq()
+                    +AuthenticateReq(AuthenticateReq)
+                    +AuthenticateReq    operator=(AuthenticateReq)
+                    +~AuthenticateReq()
+                    ..
+                    +Type   getType()
+                    ..
+                    +void   setPlayerName(string)
+                    +string getPlayerName()
+                }
+
+            }
+
+        }
+
+        namespace tool {
+
+            namespace log {
+
+                enum Idx {
+                    IN_FILE
+                    IN_CONSOLE
+                    IN_FILE_AND_CONSOLE
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
+@enduml
